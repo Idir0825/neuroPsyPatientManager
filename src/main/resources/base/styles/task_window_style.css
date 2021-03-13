@@ -1,0 +1,29 @@
+QWidget {
+    border: none;
+    background-color: #E0DFDF;
+}
+
+QPushButton[checkboxBtn=true] {
+	border: none;
+	background-color: #E0DFDF;
+}
+
+QPushButton[checkboxBtn=true]::hover {
+	border: none;
+	background-color: #E0DFDF;
+}
+
+QPushButton {
+    border: none;
+    background-color: #E0DFDF;
+}
+
+QListWidget {
+	font-weight: bold;
+	border: none;
+	background-color: #FFFFFF;
+}
+
+QListWidget::item:selected {
+	border: none;
+}
