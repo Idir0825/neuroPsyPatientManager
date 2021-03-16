@@ -9,7 +9,6 @@ import datetime as dt
 import uuid
 from itertools import cycle, dropwhile
 
-
 PATIENTS_PATH = os.path.join(Path.home(), ".patients")
 
 
@@ -36,17 +35,17 @@ def get_patients():
             tests = data.get('tests')
             color_to_delete = data.get('color_to_delete')
             creation_date = data.get('creation_date')
-            patient = Patient(guid=guid,
-                              last_name=last_name,
-                              first_name=first_name,
-                              birth_date=birth_date,
-                              description=description,
-                              notes=notes,
-                              tasks=tasks,
-                              tests=tests,
-                              color_to_delete=color_to_delete,
-                              creation_date=creation_date)
-            patients_list.append(patient)
+            temp_patient = Patient(guid=guid,
+                                   last_name=last_name,
+                                   first_name=first_name,
+                                   birth_date=birth_date,
+                                   description=description,
+                                   tests=tests,
+                                   notes=notes,
+                                   tasks=tasks,
+                                   color_to_delete=color_to_delete,
+                                   creation_date=creation_date)
+            patients_list.append(temp_patient)
     return patients_list
 
 
@@ -57,17 +56,16 @@ class Patient:
                  tests={}, tasks={}, color_to_delete="red", creation_date=""):
 
         """
-        Constructor for the class patient.
+        Constructor for the class patient
 
         :param guid: str unique universal identifier of the patient
         :param last_name: str name of the patient
         :param first_name: str first name of the patient
         :param birth_date: str birthdate of the patient
-        :param description:
-        :param notes: dict all the notes that the patient got for any test that he passed
-        :param tests: dict each item of the dict is a tuple with (payedornot, date) or (whodidthetest, dateornot)
-        :param tasks: dict tasks linked to the patient
-        :param color_to_delete: str the color that will be delete when pressing the trash icon in the taskList
+        :param description: str description of the patient
+        :param tests: dict each item of the dict is a tuple with (name of the test, date) or (name of the test, dateornot)
+        :param notes: dict each item of the dict is a dict with the notes of the test, the keys are the subtests' names
+        :param tasks: dict the keys are the names of the tasks linked to the patient, the values are the colors of those tasks in the list of tasks
         :param creation_date: str date when the patient was created on the disk
         """
 
@@ -119,6 +117,50 @@ class Patient:
         self.save_patient()
         return True
 
+    def add_test(self, name: str, date: str, test_uuid=""):
+        """
+        Adds a test to the patient's testList. Gives the test a unique universal identifier that will be the key to
+        accessing it in the tests dictionary
+
+        :param test_uuid: str the uuid of the test if it has already been defined
+        :param name: str name of the test to add
+        :param date: str date when the test was passed
+        :return: True if added successfully, otherwise returns False
+        """
+        if not test_uuid:
+            temp_test_uuid = str(uuid.uuid4())
+        else:
+            temp_test_uuid = test_uuid
+
+        if not os.path.exists(self.path):
+            logging.error("Impossible d'ajouter un test pour un patient qui n'existe pas.")
+            return False
+
+        self.tests[temp_test_uuid] = (name, date)
+        self.save_patient()
+        return True
+
+    def add_notes(self, uuid_of_the_test: str, notes_to_add: dict):
+        """
+        Adds the notes of a test to the patient's notes dictionary
+        Notes can only be added to a test that was already created in the dict 'tests'
+
+        :param uuid_of_the_test: str the uuid of the test that the notes are linked to
+        :param notes_to_add: dict the notes to add to the dictionary
+        :return: True if the notes are added successfully, else, returns False
+        """
+        if not os.path.exists(self.path):
+            logging.error("Impossible d'ajouter des notes pour un patient qui n'existe pas.")
+            return False
+
+        if uuid_of_the_test not in self.tests.keys():
+            logging.error("Impossible d'ajouter des notes pour un test que le patient n'a pas passé.")
+            return False
+
+        self.notes[uuid_of_the_test] = notes_to_add
+        self.save_patient()
+        return True
+
     def delete_patient(self):
         """
         Deletes the patient from the Disc
@@ -135,17 +177,41 @@ class Patient:
         return True
 
     @property
+    def color_to_delete(self):
+        """
+        private property containing the color the has to be deleted in the patient's taskList
+
+        :return: the value contained by the property 'color_to_delete' in the class 'Patient'
+        """
+        return self._color_to_delete
+
+    @color_to_delete.setter
+    def color_to_delete(self, col):
+        """
+        setter of the property 'color_to_delete' in the class 'Patient'
+
+        :param col: a string with the name of the color that will be deleted
+        """
+
+        if isinstance(col, str):
+            self._color_to_delete = col
+        else:
+            raise TypeError("Valeur invalide, besoin d'une chaîne de caractères.")
+
+    @property
     def description(self):
         """
         private property containing the description of the patient
-        :return: the value contained by the property description in the class Patient
+
+        :return: the value contained by the property 'description' in the class 'Patient'
         """
         return self._description
 
     @description.setter
     def description(self, des):
         """
-        setter of the property description in the class Patient
+        setter of the property 'description' in the class 'Patient'
+
         :param des: a string/text to describe the patient, his behavior, his results ..
         """
         if isinstance(des, str):
@@ -158,13 +224,14 @@ class Patient:
         """"
         Property containing the path to the patient's file
 
-        :return: The path to the patient's file
+        :return: A string containing the path to the patient's file
         """
         return os.path.join(PATIENTS_PATH, self.id + ".json")
 
     def remove_task(self, name):
         """
         Removes the task 'name' from the patient's taskList
+
         :param name: str the name of the task to remove
         :return: False if it failed, else returns True
         """
@@ -177,7 +244,40 @@ class Patient:
             return False
 
         del self.tasks[name]
-        logging.info("La tâche a été supprimé correctement")
+        logging.info("La tâche a été supprimée correctement")
+        self.save_patient()
+        return True
+
+    def remove_test(self, test_uuid):
+        """ Removes the test with uuid=test_uuid from the patient's testList """
+
+        if not os.path.exists(self.path):
+            logging.error("Impossible d'enlever un test pour un patient qui n'existe pas.")
+            return False
+
+        if test_uuid not in self.tests.keys():
+            logging.error("Ce test n'existe pas.")
+            return False
+
+        del self.tests[test_uuid]
+        self.remove_notes(test_uuid=test_uuid)
+        logging.info("Le test a été supprimé correctement")
+        self.save_patient()
+        return True
+
+    def remove_notes(self, test_uuid):
+        """ Removes the notes of the test with uuid=test_uuid from the patient's notesList """
+
+        if not os.path.exists(self.path):
+            logging.error("Impossible d'enlever des notes pour un patient qui n'existe pas.")
+            return False
+
+        if test_uuid not in self.notes.keys():
+            logging.error("Les notes pour ce test n'existe pas.")
+            return False
+
+        del self.notes[test_uuid]
+        logging.info("Les notes de ce test ont été supprimées correctement")
         self.save_patient()
         return True
 
@@ -191,15 +291,15 @@ class Patient:
             if not os.path.exists(PATIENTS_PATH):
                 os.makedirs(PATIENTS_PATH)
 
-            data = {"last_name":     self.last_name,
-                    "first_name":    self.first_name,
-                    "birth_date":    self.birth_date,
-                    "description":   self.description,
-                    "notes":         self.notes,
-                    "tasks":         self.tasks,
-                    "tests":         self.tests,
+            data = {"last_name":       self.last_name,
+                    "first_name":      self.first_name,
+                    "birth_date":      self.birth_date,
+                    "description":     self.description,
+                    "tests":           self.tests,
+                    "notes":           self.notes,
+                    "tasks":           self.tasks,
                     "color_to_delete": self.color_to_delete,
-                    "creation_date": self.created_on
+                    "creation_date":   self.created_on
                     }
 
             with open(self.path, "w") as f:
@@ -214,8 +314,8 @@ class Patient:
 
     def set_task_status(self, name):
         """
-        Changes the status of a task and the color of the line it is written on in the list
-        :param name: str the name of the task that is being worked on
+        Changes the status of a task and the color of the line it is written on in the listWidget
+        :param name: str the name of the task
         :return: False if the change failed, else it returns True and the new color of the task status
         """
         colors = ["red", "orange", "green", "blue", "purple"]
@@ -229,7 +329,8 @@ class Patient:
             return False
 
         if name not in self.tasks.keys():
-            logging.error(f"La tâche {name} n'existe pas dans la liste de tâches du patient {self.last_name} {self.first_name}.")
+            logging.error(
+                f"La tâche {name} n'existe pas dans la liste de tâches du patient {self.last_name} {self.first_name}.")
             return False
 
         self.tasks[name] = color
@@ -238,8 +339,33 @@ class Patient:
 
 
 if __name__ == '__main__':
-    idir = Patient(last_name="Houari", first_name="Idir", birth_date="1996-07-25",
+    idir = Patient(last_name="Houari", first_name="Idir", birth_date="25-07-1996",
                    description="Je suis un garçon de 24 ans qui travaille dans une école.")
     idir.save_patient()
-    print(idir)
-    print(idir.description)
+    idir.add_test("Banane", "14-03-2021")
+    for u in idir.tests.keys():
+        idir.add_notes(uuid_of_the_test=u, notes_to_add={"A": 15, "B": 20})
+    idir.color_to_delete = "purple"
+
+    patients = get_patients()
+    for patient in patients:
+        print(patient)
+        print(patient.tests)
+        print(patient.notes)
+        print(" ")
+
+    """ 
+    my_keys = []
+    for u in idir.tests.keys():
+        my_keys.append(u)
+
+    for i in my_keys:
+        idir.remove_test(test_uuid=i)
+
+    patients = get_patients()
+    for patient in patients:
+        print(patient)
+        print(patient.tests)
+        print(patient.notes)
+        print(" ")
+    """

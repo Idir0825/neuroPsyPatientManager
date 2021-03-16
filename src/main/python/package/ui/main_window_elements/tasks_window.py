@@ -58,19 +58,17 @@ class TasksWindow(QtWidgets.QMainWindow):
     """
     Window that will show up all the tasks that need to be done
     """
-    def __init__(self, patient, ctx):
+    def __init__(self, ctx, main_window):
         """
         Constructor of the class TasksWindow, this will generate the window with all the tasks
-        :param patient: Patient the patient to which the tasks are linked
+        :param main_window: QMainWindow the main window of the application used to make a link with the other windows
         :param ctx: application context, the app itself
         """
         super().__init__()
         self.setMinimumSize(250, 250)
-        self.patient = patient
+        self.main_window = main_window
         self.ctx = ctx
         self.setup_ui()
-        self.get_tasks()
-        self.make_change_color_to_delete(self.patient.color_to_delete)
         self.resize(QtCore.QSize(256, 350))
 
     def setup_ui(self):
@@ -127,7 +125,10 @@ class TasksWindow(QtWidgets.QMainWindow):
 
         self.btn_add.setIcon(QtGui.QIcon(self.ctx.get_resource("images/add.svg")))
         self.btn_clean.setIcon(QtGui.QIcon(self.ctx.get_resource("images/clean.svg")))
-        self.icon_color_to_delete.setIcon(QtGui.QIcon(self.ctx.get_resource(f"colors/{self.patient.color_to_delete}.svg")))
+
+        self.btn_add.setDisabled(True)
+        self.btn_clean.setDisabled(True)
+        self.icon_color_to_delete.setDisabled(True)
 
         self.btn_add.setFixedSize(36, 36)
         self.btn_clean.setFixedSize(36, 36)
@@ -219,6 +220,23 @@ class TasksWindow(QtWidgets.QMainWindow):
 
         self.get_tasks()
         self.lw_tasks.repaint()  # Rafraichissement pour éviter les pbs d'affichage
+
+    def define_patient(self, patient):
+        """
+        Sets the variable self.patient to 'patient'
+
+        :param patient: Patient, an instance of the class 'Patient', the patient that the window will show the tasks of
+        """
+        self.patient = patient
+        self.icon_color_to_delete.setIcon(QtGui.QIcon(self.ctx.get_resource(f"colors/{self.patient.color_to_delete}.svg")))
+        self.enable_buttons()
+
+    def enable_buttons(self):
+        """ Activates the buttons """
+
+        self.btn_add.setDisabled(False)
+        self.btn_clean.setDisabled(False)
+        self.icon_color_to_delete.setDisabled(False)
 
     def get_tasks(self):
         """
