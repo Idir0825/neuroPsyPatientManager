@@ -230,6 +230,7 @@ class TasksWindow(QtWidgets.QMainWindow):
         self.patient = patient
         self.icon_color_to_delete.setIcon(QtGui.QIcon(self.ctx.get_resource(f"colors/{self.patient.color_to_delete}.svg")))
         self.enable_buttons()
+        self.get_tasks()
 
     def enable_buttons(self):
         """ Activates the buttons """

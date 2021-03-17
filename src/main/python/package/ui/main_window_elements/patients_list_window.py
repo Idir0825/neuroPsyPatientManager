@@ -1,4 +1,4 @@
-from PySide2 import QtWidgets, QtCore
+from PySide2 import QtWidgets, QtCore, QtGui
 
 from package.api.models.patient import get_patients
 
@@ -34,6 +34,7 @@ class PatientsList(QtWidgets.QListWidget):
         self.setAlternatingRowColors(True)
         self.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         self.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self.setItemAlignment(QtCore.Qt.AlignCenter)
 
     def get_selected_item(self):
         """

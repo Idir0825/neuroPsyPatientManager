@@ -8,8 +8,6 @@ from package.ui.main_window_elements.tasks_window import TasksWindow
 from package.ui.main_window_elements.details_window import DetailsWindow
 from package.ui.main_window_elements.patients_list_window import PatientsList
 
-from package.api.models.patient import Patient, get_patients
-
 
 class MainWindow(QtWidgets.QMainWindow):
     """
@@ -31,25 +29,14 @@ class MainWindow(QtWidgets.QMainWindow):
         """
         self.create_widgets()
         self.create_layouts()
-        self.modify_widgets()
         self.add_widgets_to_layouts()
+        self.modify_widgets()
         self.setup_connections()
 
     def create_widgets(self):
         """
         creates the widgets inside the current widget
         """
-        test_patient = Patient(last_name="Banane", first_name="Pourrie", birth_date="16-11-2017",
-                               description="J'ai fais une description",
-                               tests={"Teach":    ("Payé", "21-03-2021"), "Wisc-V": ("Dr.Contardo", "21-03-2021"),
-                                      "Weiss":    ("Payé", "21-03-2021"), "NewTest": ("Dr.Contardo", "21-03-2021"),
-                                      "Teachbis": ("Payé", "21-03-2021"), "Wisc-Vbis": ("Dr.Contardo", "21-03-2021"),
-                                      "Weissbis": ("Payé", "21-03-2021"), "Wisc-IV": ("Dr.Contardo", "21-03-2021"),
-                                      "Weisster": ("Payé", "21-03-2021"), "Wisc-IVbis": ("Dr.Contardo", "21-03-2021"),
-                                      "Test": ("Payé", "21-03-2021"), "Wisc-VI": ("Dr.Contardo", "21-03-2021"),
-                                      "Testencore": ("Payé", "21-03-2021"), "Wisc-XIV": ("Dr.Contardo", "21-03-2021")})
-
-        test_patient.save_patient()
 
         self.center_widget = QtWidgets.QWidget()
         self.patients_layout_container = QtWidgets.QWidget()
@@ -58,7 +45,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.tasks_list = TasksWindow(ctx=self.ctx, main_window=self)
         self.btn_add_patient = QtWidgets.QPushButton("Ajouter un patient")
         self.lw_patients = PatientsList(ctx=self.ctx, main_window=self)
-        self.te_description = QtWidgets.QTextEdit(text=test_patient.description)
+        self.te_description = QtWidgets.QTextEdit()
 
         self.bottom_layout_splitter = QtWidgets.QSplitter()
 
@@ -66,9 +53,22 @@ class MainWindow(QtWidgets.QMainWindow):
         """
             Modifying the created widgets
         """
+        # -- Setting stylesheets --
         stylesheet = self.ctx.get_resource("styles/style.css")
         with open(stylesheet) as f:
             self.setStyleSheet(f.read())
+
+        self.patients_layout_container.setStyleSheet("border: 1px solid rgb(50, 50, 50); border-radius: 4px;")
+
+        self.btn_add_patient.setStyleSheet("font-weight: bold;")
+
+        # -- End Setting stylesheets --
+
+        self.patients_layout.setContentsMargins(0, 0, 0, 0)
+        self.patients_layout.setSpacing(0)
+
+        self.bottom_layout_splitter.setCollapsible(0, False)  # Avoid items in the splitter from collapsing completely
+        self.bottom_layout_splitter.setCollapsible(1, False)
 
     def create_layouts(self):
         """
@@ -96,7 +96,6 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.bottom_layout_splitter.addWidget(self.patients_layout_container)
         self.bottom_layout_splitter.addWidget(self.te_description)
-        self.bottom_layout_splitter.setSizes([self.width() / 3, self.width() * (2/3)])
 
     def setup_connections(self):
         """
